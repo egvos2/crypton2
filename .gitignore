@@ -1,3 +1,4 @@
 # Build and Release Folders
 **/.deps/
-**/artifacts/
+**/contracts/artifacts/
+**/artifacts/Ballot.json
