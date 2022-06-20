@@ -24,7 +24,7 @@ contract Ballot {
         mapping (uint => Voter) voters; // Voters list
     }
 
-    uint numVotes; // Votes number
+    uint public numVotes; // Votes number
     mapping (uint => Vote) public votes; // Votes list
 
     // Constructor

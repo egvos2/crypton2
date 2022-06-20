@@ -2,3 +2,4 @@
 **/.deps/
 **/contracts/artifacts/
 **/artifacts/Ballot.json
+contracts/artifacts
