@@ -106,7 +106,8 @@ contract Ballot {
 
     // Close vote
     function closeVote (uint ID) public payable {
-
+        require (ID >= 0 && ID < numVotes, "Rejected! Vote ID is out of range!");
+        require (votes[ID].startTime - block.timestamp > 259200000, "Rejected! Three days have not yet passed!"); // 3 day in ms: 1000*60*60*24*3
     }
 
 }
