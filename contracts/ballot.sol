@@ -17,7 +17,7 @@ contract Ballot {
     // Vote
     struct Vote {
         uint id; // Vote ID
-        uint startTime; // Vote creation time
+        uint startTime; // Vote creation time (in sec)
         bool closed; // if true, that vote already closed
         uint balance; // Vote depo
         uint numVoters; // Voters number
@@ -61,7 +61,8 @@ contract Ballot {
     function getVotes () public view returns (uint[] memory) {
         uint[] memory ret = new uint[](numVotes);
         for (uint i = 0; i < numVotes; i++) {
-			ret[i] = votes[i].id;
+            if (!votes[i].closed) // Not closed
+			    ret[i] = votes[i].id;
 		}
 		return ret;
     }
@@ -107,7 +108,27 @@ contract Ballot {
     // Close vote
     function closeVote (uint ID) public payable {
         require (ID >= 0 && ID < numVotes, "Rejected! Vote ID is out of range!");
-        require (votes[ID].startTime - block.timestamp > 259200000, "Rejected! Three days have not yet passed!"); // 3 day in ms: 1000*60*60*24*3
+        require (votes[ID].startTime - block.timestamp > 259200, "Rejected! Three days have not yet passed!"); // 3 day in sec: 60*60*24*3
+        // Find voter id with max vote count
+        uint max_id = 0;
+        if (numVotes > 1) {
+            for (uint i = 1; i < votes[ID].numVoters; i++) {
+                if (votes[ID].voters[i].voteCount > votes[ID].voters[max_id].voteCount) {
+                    max_id = i;
+                }
+            }
+        }
+        // Close vote
+        votes[ID].closed = true;
+        // Calculate rewards
+        uint owner_reward = votes[ID].balance/10;
+        uint winner_reward = votes[ID].balance - owner_reward;
+        // Pay the winner
+        address payable pay_winner = payable(votes[ID].voters[max_id].addr);
+        pay_winner.transfer(winner_reward);
+        // Pay the owner
+        address payable pay_owner = payable(owner);
+        pay_owner.transfer(owner_reward);
     }
 
 }
