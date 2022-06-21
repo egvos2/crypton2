@@ -5,6 +5,7 @@ pragma solidity 0.8.4;
 contract Ballot {
 
     address public owner; // Contract owner
+    address public contract_addr; // Contract address
 
     // Voter
     struct Voter {
@@ -30,6 +31,7 @@ contract Ballot {
     // Constructor
     constructor () {
         owner = msg.sender;
+        contract_addr = address(this);
     }
 
     // Create vote
@@ -76,6 +78,16 @@ contract Ballot {
 		return ret;
     }
 
+    // Get contract balance, vote balance by vote ID, winner reward and owner reward
+    function getVoteInfo (uint ID) public view returns (uint[] memory) {
+        uint[] memory ret = new uint[](4);
+        ret[0] = contract_addr.balance;
+        ret[1] = votes[ID].balance;
+        ret[2] = votes[ID].balance/10;
+        ret[3] = votes[ID].balance - votes[ID].balance/10;
+		return ret;
+    }
+
     // Send vote by Vote ID (ID1) and Voter ID (ID2)
     function sendVote (uint ID1, uint ID2) public {
         require (ID1 >= 0 && ID1 < numVotes, "Rejected! Vote ID is out of range!");
@@ -105,13 +117,21 @@ contract Ballot {
         }
     }
 
+    // Time info
+    function getTimeInfo (uint ID) public view returns (uint[] memory) {
+        uint[] memory ret = new uint[](2);
+        ret[0] = votes[ID].startTime;
+        ret[1] = block.timestamp;
+		return ret;
+    }
+
     // Close vote
-    function closeVote (uint ID) public payable {
+    function closeVote (uint ID) public {
         require (ID >= 0 && ID < numVotes, "Rejected! Vote ID is out of range!");
-        require (votes[ID].startTime - block.timestamp > 259200, "Rejected! Three days have not yet passed!"); // 3 day in sec: 60*60*24*3
+        require (block.timestamp - votes[ID].startTime > 1/*259200*/, "Rejected! Three days have not yet passed!"); // 3 day in sec: 60*60*24*3
         // Find voter id with max vote count
         uint max_id = 0;
-        if (numVotes > 1) {
+        if (votes[ID].numVoters > 1) {
             for (uint i = 1; i < votes[ID].numVoters; i++) {
                 if (votes[ID].voters[i].voteCount > votes[ID].voters[max_id].voteCount) {
                     max_id = i;
@@ -123,12 +143,15 @@ contract Ballot {
         // Calculate rewards
         uint owner_reward = votes[ID].balance/10;
         uint winner_reward = votes[ID].balance - owner_reward;
+        //uint test_reward = 1000;
         // Pay the winner
         address payable pay_winner = payable(votes[ID].voters[max_id].addr);
         pay_winner.transfer(winner_reward);
         // Pay the owner
         address payable pay_owner = payable(owner);
         pay_owner.transfer(owner_reward);
+        // Zero balance
+        votes[ID].balance = 0;
     }
 
 }
